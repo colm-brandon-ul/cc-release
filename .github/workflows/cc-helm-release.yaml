@@ -8,7 +8,7 @@ jobs:
   get_helm:
     runs-on: ubuntu-latest
     outputs:
-      changes_detected: ${{ steps.check_changes.outputs.changes_detected }}
+      changes_detected: ${{ steps.compare.outputs.changes_detected }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -83,6 +83,14 @@ jobs:
 
           echo "Showing diff between backup and new helm (if backup exists)"
           [ -d "${current_dir}/helm_backup" ] && git diff --no-index "${current_dir}/helm_backup" "${current_dir}/helm" || true
+
+      - name: Commit and push changes
+        if: steps.compare.outputs.changes_detected == 'true'
+        run: |
+          git add helm/
+          git commit -m "Update helm directory from cinco-cloud"
+          git push
+        continue-on-error: false
 
       - name: Cleanup
         run: |
