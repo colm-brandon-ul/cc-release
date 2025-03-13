@@ -1,0 +1,73 @@
+name: Helm Release
+on:
+  trigger:
+  schedule:
+    - cron: '0 0 * * *'  
+
+
+jobs:
+
+  get_helm:
+    runs-on: ubuntu-latest
+    outputs:
+      changes_detected: ${{ steps.check_changes.outputs.changes_detected }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+            fetch-depth: 5
+
+      - name: Configure Git
+        run: |
+            git config user.name "$GITHUB_ACTOR"
+            git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Check for Helm changes
+        id: check_changes
+        run: |
+            current_dir=$(pwd)
+            git clone --filter=blob:none --sparse https://gitlab.com/scce/cinco-cloud.git
+            cd cinco-cloud
+            git sparse-checkout set infrastructure
+            git diff --no-index --quiet "${current_dir}/helm" "${current_dir}/cinco-cloud/infrastructure/helm"
+            if [ $? -eq 0 ]; then
+              echo "No changes"
+              echo "changes_detected=false" >> $GITHUB_OUTPUT
+            else
+              echo "Changes detected - overwriting local helm directory"
+              rm -rf "${current_dir}/helm"
+              cp -r "${current_dir}/cinco-cloud/infrastructure/helm" "${current_dir}/helm"
+              echo "Helm directory has been updated"
+              echo "changes_detected=true" >> $GITHUB_OUTPUT
+            fi
+            rm -rf "${current_dir}/cinco-cloud"
+
+  release:
+    needs: get_helm
+    if: needs.get_helm.outputs.changes_detected == 'true'
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_USERNAME: ${{ github.repository_owner }}
+      REPO_NAME: ${{ github.repository }}
+      CHART_PATH: ./helm
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+            fetch-depth: 5
+
+      - name: Configure Git
+        run: |
+            git config user.name "$GITHUB_ACTOR"
+            git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Add Helm repositories for dependencies
+        run: |
+            helm repo add bitnami https://charts.bitnami.com/bitnami
+            helm repo add codecentric https://codecentric.github.io/helm-charts
+
+      - name: Run chart-releaser    
+        uses: helm/chart-releaser-action@v1.6.0
+        env:
+         CR_TOKEN: "${{ secrets.ACCESS_TOKEN }}"
