@@ -34,7 +34,7 @@ jobs:
           echo "Content of current directory:"
           ls -la
           echo "Content of helm directory (if exists):"
-          ls -la helm || echo "Helm directory doesn't exist"
+          ls -la charts/cinco-cloud || echo "Helm directory doesn't exist"
           echo "Content of cinco-cloud/infrastructure/helm:"
           ls -la cinco-cloud/infrastructure/helm || echo "Path doesn't exist"
 
@@ -42,7 +42,7 @@ jobs:
         id: compare
         run: |
           current_dir=$(pwd)
-          if [ ! -d "${current_dir}/helm" ]; then
+          if [ ! -d "${current_dir}/charts/cinco-cloud" ]; then
             echo "Local helm directory doesn't exist. Will create it."
             echo "SOURCE_EXISTS=false" >> $GITHUB_OUTPUT
             echo "changes_detected=true" >> $GITHUB_OUTPUT
@@ -54,10 +54,10 @@ jobs:
           else
             echo "Both directories exist. Comparing..."
             echo "SOURCE_EXISTS=true" >> $GITHUB_OUTPUT
-            git diff --no-index --stat "${current_dir}/helm" "${current_dir}/cinco-cloud/infrastructure/helm" || true
+            git diff --no-index --stat "${current_dir}/charts/cinco-cloud" "${current_dir}/cinco-cloud/infrastructure/helm" || true
             
             # Store the result of git diff in a variable to avoid immediate exit
-            git diff --no-index --quiet "${current_dir}/helm" "${current_dir}/cinco-cloud/infrastructure/helm" || DIFF_RESULT=$?
+            git diff --no-index --quiet "${current_dir}/charts/cinco-cloud" "${current_dir}/cinco-cloud/infrastructure/helm" || DIFF_RESULT=$?
             
             if [ "${DIFF_RESULT:-0}" -eq 0 ]; then
               echo "No changes detected between directories"
@@ -75,15 +75,15 @@ jobs:
         run: |
           current_dir=$(pwd)
           echo "Backup current helm directory (if it exists)"
-          [ -d "${current_dir}/helm" ] && cp -r "${current_dir}/helm" "${current_dir}/helm_backup"
+          [ -d "${current_dir}/charts/cinco-cloud" ] && cp -r "${current_dir}/charts/cinco-cloud" "${current_dir}/helm_backup"
 
           echo "Overwriting local helm directory"
-          rm -rf "${current_dir}/helm"
-          cp -r "${current_dir}/cinco-cloud/infrastructure/helm" "${current_dir}/helm"
+          rm -rf "${current_dir}/charts/cinco-cloud"
+          cp -r "${current_dir}/cinco-cloud/infrastructure/helm" "${current_dir}/charts/cinco-cloud"
           echo "Helm directory has been updated"
 
           echo "Showing diff between backup and new helm (if backup exists)"
-          [ -d "${current_dir}/helm_backup" ] && git diff --no-index "${current_dir}/helm_backup" "${current_dir}/helm" || true
+          [ -d "${current_dir}/helm_backup" ] && git diff --no-index "${current_dir}/helm_backup" "${current_dir}/charts/cinco-cloud" || true
 
       - name: Commit and push changes
         if: steps.compare.outputs.changes_detected == 'true'
@@ -99,7 +99,7 @@ jobs:
 
       - name: Cleanup
         run: |
-          rm -rf "${PWD}/cinco-cloud"
+          rm -rf "${PWD}/charts/cinco-cloud"
           [ -d "${PWD}/helm_backup" ] && rm -rf "${PWD}/helm_backup"
           echo "Cleanup completed"
 
@@ -110,7 +110,7 @@ jobs:
     env:
       GITHUB_USERNAME: ${{ github.repository_owner }}
       REPO_NAME: ${{ github.repository }}
-      CHART_PATH: ./helm
+      CHART_PATH: ./charts/cinco-cloud
 
     steps:
       - name: Checkout code

@@ -1,4 +1,4 @@
-name: Release Cinco De Bio Chart
+name: Release Cinco Cloud Chart
 on:
   workflow_dispatch:
 
@@ -8,7 +8,7 @@ jobs:
     env:
       GITHUB_USERNAME: ${{ github.repository_owner }}
       REPO_NAME: ${{ github.repository }}
-      CHART_PATH: ./helm
+      CHART_PATH: ./charts/cinco-cloud
       
     steps:
       - name: Checkout code
@@ -24,6 +24,7 @@ jobs:
       - name: Add Helm repositories for dependencies
         run: |
             helm repo add bitnami https://charts.bitnami.com/bitnami
+            helm repo add codecentric https://codecentric.github.io/helm-charts
 
       - name: Run chart-releaser    
         uses: helm/chart-releaser-action@v1.6.0
