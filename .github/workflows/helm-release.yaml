@@ -1,32 +1,37 @@
 name: Release Cinco Cloud Chart
+
 on:
   workflow_dispatch:
 
 jobs:
   release:
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
     runs-on: ubuntu-latest
-    env:
-      GITHUB_USERNAME: ${{ github.repository_owner }}
-      REPO_NAME: ${{ github.repository }}
-      CHART_PATH: ./charts/cinco-cloud
-      
+    
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4  # Updated from v2 to v4
         with:
-            fetch-depth: 5
+          fetch-depth: 0  # Changed from 5 for full history
+          persist-credentials: true  # Added for auth persistence
 
       - name: Configure Git
         run: |
-            git config user.name "$GITHUB_ACTOR"
-            git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
       - name: Add Helm repositories for dependencies
         run: |
-            helm repo add bitnami https://charts.bitnami.com/bitnami
-            helm repo add codecentric https://codecentric.github.io/helm-charts
+          helm repo add bitnami https://charts.bitnami.com/bitnami
+          helm repo add codecentric https://codecentric.github.io/helm-charts
 
       - name: Run chart-releaser    
         uses: helm/chart-releaser-action@v1.6.0
+        with:  # Added with section
+          skip_existing: true  # Prevent duplicate releases
+          charts_dir: charts  # Explicit directory
         env:
-         CR_TOKEN: "${{ secrets.ACCESS_TOKEN }}"
+          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"  # Changed to default token
