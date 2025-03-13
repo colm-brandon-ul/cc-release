@@ -54,8 +54,11 @@ jobs:
             echo "Both directories exist. Comparing..."
             echo "SOURCE_EXISTS=true" >> $GITHUB_OUTPUT
             git diff --no-index --stat "${current_dir}/helm" "${current_dir}/cinco-cloud/infrastructure/helm" || true
-            git diff --no-index --quiet "${current_dir}/helm" "${current_dir}/cinco-cloud/infrastructure/helm"
-            if [ $? -eq 0 ]; then
+            
+            # Store the result of git diff in a variable to avoid immediate exit
+            git diff --no-index --quiet "${current_dir}/helm" "${current_dir}/cinco-cloud/infrastructure/helm" || DIFF_RESULT=$?
+            
+            if [ "${DIFF_RESULT:-0}" -eq 0 ]; then
               echo "No changes detected between directories"
               echo "changes_detected=false" >> $GITHUB_OUTPUT
             else
@@ -63,6 +66,8 @@ jobs:
               echo "changes_detected=true" >> $GITHUB_OUTPUT
             fi
           fi
+        shell: bash
+        continue-on-error: true
 
       - name: Update helm directory if changes detected
         if: steps.compare.outputs.changes_detected == 'true' && steps.compare.outputs.SOURCE_EXISTS == 'true'
