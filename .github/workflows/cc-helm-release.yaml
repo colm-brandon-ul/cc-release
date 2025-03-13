@@ -13,7 +13,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
         with:
-          fetch-depth: 5
+          fetch-depth: 0  # Get full history for better change detection
           token: ${{ secrets.ACCESS_TOKEN }}
 
       - name: Configure Git
@@ -116,7 +116,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
         with:
-          fetch-depth: 5
+          fetch-depth: 0  # Get full history for better change detection
+          token: ${{ secrets.ACCESS_TOKEN }}
 
       - name: Configure Git
         run: |
@@ -130,5 +131,7 @@ jobs:
 
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@v1.6.0
+        with:
+          charts_dir: helm  # Specify the directory where your helm charts are located
         env:
           CR_TOKEN: "${{ secrets.ACCESS_TOKEN }}"
