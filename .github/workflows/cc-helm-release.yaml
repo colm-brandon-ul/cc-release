@@ -2,13 +2,9 @@ name: Helm Release
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 0 * * *'  
-
-  
-
+    - cron: "0 0 * * *"
 
 jobs:
-
   get_helm:
     runs-on: ubuntu-latest
     outputs:
@@ -17,32 +13,77 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
         with:
-            fetch-depth: 5
+          fetch-depth: 5
 
       - name: Configure Git
         run: |
-            git config user.name "$GITHUB_ACTOR"
-            git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
-      - name: Check for Helm changes
-        id: check_changes
+      - name: Clone cinco-cloud repository
         run: |
-            current_dir=$(pwd)
-            git clone --filter=blob:none --sparse https://gitlab.com/scce/cinco-cloud.git
-            cd cinco-cloud
-            git sparse-checkout set infrastructure
+          git clone --filter=blob:none --sparse https://gitlab.com/scce/cinco-cloud.git
+          cd cinco-cloud
+          git sparse-checkout set infrastructure
+          echo "Cinco-cloud repository cloned successfully with sparse checkout on infrastructure"
+
+      - name: List directories for debugging
+        run: |
+          echo "Current directory: $(pwd)"
+          echo "Content of current directory:"
+          ls -la
+          echo "Content of helm directory (if exists):"
+          ls -la helm || echo "Helm directory doesn't exist"
+          echo "Content of cinco-cloud/infrastructure/helm:"
+          ls -la cinco-cloud/infrastructure/helm || echo "Path doesn't exist"
+
+      - name: Compare helm directories
+        id: compare
+        run: |
+          current_dir=$(pwd)
+          if [ ! -d "${current_dir}/helm" ]; then
+            echo "Local helm directory doesn't exist. Will create it."
+            echo "SOURCE_EXISTS=false" >> $GITHUB_OUTPUT
+            echo "changes_detected=true" >> $GITHUB_OUTPUT
+          elif [ ! -d "${current_dir}/cinco-cloud/infrastructure/helm" ]; then
+            echo "Source helm directory doesn't exist. Cannot proceed with comparison."
+            echo "SOURCE_EXISTS=false" >> $GITHUB_OUTPUT
+            echo "changes_detected=false" >> $GITHUB_OUTPUT
+            exit 1
+          else
+            echo "Both directories exist. Comparing..."
+            echo "SOURCE_EXISTS=true" >> $GITHUB_OUTPUT
+            git diff --no-index --stat "${current_dir}/helm" "${current_dir}/cinco-cloud/infrastructure/helm" || true
             git diff --no-index --quiet "${current_dir}/helm" "${current_dir}/cinco-cloud/infrastructure/helm"
             if [ $? -eq 0 ]; then
-              echo "No changes"
+              echo "No changes detected between directories"
               echo "changes_detected=false" >> $GITHUB_OUTPUT
             else
-              echo "Changes detected - overwriting local helm directory"
-              rm -rf "${current_dir}/helm"
-              cp -r "${current_dir}/cinco-cloud/infrastructure/helm" "${current_dir}/helm"
-              echo "Helm directory has been updated"
+              echo "Changes detected between directories"
               echo "changes_detected=true" >> $GITHUB_OUTPUT
             fi
-            rm -rf "${current_dir}/cinco-cloud"
+          fi
+
+      - name: Update helm directory if changes detected
+        if: steps.compare.outputs.changes_detected == 'true' && steps.compare.outputs.SOURCE_EXISTS == 'true'
+        run: |
+          current_dir=$(pwd)
+          echo "Backup current helm directory (if it exists)"
+          [ -d "${current_dir}/helm" ] && cp -r "${current_dir}/helm" "${current_dir}/helm_backup"
+
+          echo "Overwriting local helm directory"
+          rm -rf "${current_dir}/helm"
+          cp -r "${current_dir}/cinco-cloud/infrastructure/helm" "${current_dir}/helm"
+          echo "Helm directory has been updated"
+
+          echo "Showing diff between backup and new helm (if backup exists)"
+          [ -d "${current_dir}/helm_backup" ] && git diff --no-index "${current_dir}/helm_backup" "${current_dir}/helm" || true
+
+      - name: Cleanup
+        run: |
+          rm -rf "${PWD}/cinco-cloud"
+          [ -d "${PWD}/helm_backup" ] && rm -rf "${PWD}/helm_backup"
+          echo "Cleanup completed"
 
   release:
     needs: get_helm
@@ -52,24 +93,24 @@ jobs:
       GITHUB_USERNAME: ${{ github.repository_owner }}
       REPO_NAME: ${{ github.repository }}
       CHART_PATH: ./helm
-      
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
         with:
-            fetch-depth: 5
+          fetch-depth: 5
 
       - name: Configure Git
         run: |
-            git config user.name "$GITHUB_ACTOR"
-            git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
       - name: Add Helm repositories for dependencies
         run: |
-            helm repo add bitnami https://charts.bitnami.com/bitnami
-            helm repo add codecentric https://codecentric.github.io/helm-charts
+          helm repo add bitnami https://charts.bitnami.com/bitnami
+          helm repo add codecentric https://codecentric.github.io/helm-charts
 
-      - name: Run chart-releaser    
+      - name: Run chart-releaser
         uses: helm/chart-releaser-action@v1.6.0
         env:
-         CR_TOKEN: "${{ secrets.ACCESS_TOKEN }}"
+          CR_TOKEN: "${{ secrets.ACCESS_TOKEN }}"
