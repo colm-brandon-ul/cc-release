@@ -2,6 +2,28 @@ apiVersion: v1
 entries:
   cincocloud:
   - apiVersion: v2
+    appVersion: 0.1.1
+    created: "2025-08-17T13:55:48.344702267Z"
+    dependencies:
+    - name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 13.1.5
+    - name: minio
+      repository: https://charts.bitnami.com/bitnami
+      version: 12.8.15
+    - condition: mailhog.enabled
+      name: mailhog
+      repository: https://codecentric.github.io/helm-charts
+      version: 5.2.3
+    description: A Helm chart for Cinco Cloud
+    digest: d000db42605107bbc0f6176a1b4e2452812a4045a62913e4166caefc6420fee6
+    icon: https://scce.gitlab.io/cinco-cloud/assets/cinco-logo.png
+    name: cincocloud
+    type: application
+    urls:
+    - https://github.com/colm-brandon-ul/cc-release/releases/download/cincocloud-0.1.1/cincocloud-0.1.1.tgz
+    version: 0.1.1
+  - apiVersion: v2
     appVersion: 0.1.0
     created: "2025-03-13T15:45:37.294441764Z"
     dependencies:
@@ -23,4 +45,4 @@ entries:
     urls:
     - https://github.com/colm-brandon-ul/cc-release/releases/download/cincocloud-0.1.0/cincocloud-0.1.0.tgz
     version: 0.1.0
-generated: "2025-03-13T15:45:37.294451853Z"
+generated: "2025-08-17T13:55:48.344712877Z"
