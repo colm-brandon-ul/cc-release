@@ -13,14 +13,14 @@ metadata:
       {{- if eq .Values.devMode true }}
       proxy_set_header Origin "";
       {{- end }}
-    {{- if ne .Values.serverTier "local" }}
+    {{- if ne .Values.deploymentTarget "local" }}
     cert-manager.io/issuer: "letsencrypt-{{ .Values.serverTier }}"
     {{- end }}
 spec:
   tls:
     - hosts:
         - {{ .Values.ingress.host }}
-      {{- if eq .Values.serverTier "local" }}
+      {{- if eq .Values.deploymentTarget "local" }}
       secretName: "cinco-cloud-local-cert-secret"
       {{- else }}
       secretName: "letsencrypt-secret-{{ .Values.serverTier }}"
