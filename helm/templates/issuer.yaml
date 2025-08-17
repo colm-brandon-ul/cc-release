@@ -1,4 +1,4 @@
-{{- if ne .Values.serverTier "local" }}
+{{- if ne .Values.deploymentTarget "local" }}
 apiVersion: cert-manager.io/v1
 kind: Issuer
 metadata:
