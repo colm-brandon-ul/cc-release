@@ -1,5 +1,6 @@
 # The name of the environment. Valid values are 'production' and 'local'.
 serverTier: production
+deploymentTarget: production
 
 # If CincoCloud is started in debug mode. Should be 'false' if serverTier is 'production'.
 debug: false
@@ -75,9 +76,9 @@ mailhog:
       port: 1025
 
 # Configuration for the archetype image and Theia editors.
-archetype:
+archetype: 
   # The image that is used for editors.
-  image:
+  image: registry.gitlab.com/scce/cinco-cloud/archetype:main-9b77531e480ce5a7e8822797baa8f52688fca2a3
   # The amount of available storage.
   storage: 2Gi
   # The path on the host machine where files are stored
